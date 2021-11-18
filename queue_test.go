@@ -1,8 +1,11 @@
 package goque
 
 import (
+	"bytes"
 	"fmt"
+	"math/rand"
 	"os"
+	"sync"
 	"testing"
 	"time"
 )
@@ -588,6 +591,176 @@ func TestQueueOutOfBounds(t *testing.T) {
 	}
 }
 
+func TestBlocking(t *testing.T) {
+	file := fmt.Sprintf("test_db_%d", time.Now().UnixNano())
+	q, err := OpenQueue(file)
+	if err != nil {
+		t.Error(err)
+	}
+	defer q.Drop()
+
+	testData := []byte("test")
+	go func() {
+		_, err := q.Enqueue(testData)
+		if err != nil {
+			t.Error(err)
+		}
+	}()
+
+	x, err := q.PeekBlock()
+	if err != nil {
+		t.Error(err)
+	}
+	if !bytes.Equal(x.Value, testData) {
+		t.Errorf("Expected to get `%v`, got `%v`", string(testData), string(x.Value))
+	}
+
+	x, err = q.DequeueBlock()
+	if err != nil {
+		t.Error(err)
+	}
+	if !bytes.Equal(x.Value, testData) {
+		t.Errorf("Expected to get `%v`, got `%v`", string(testData), string(x.Value))
+	}
+
+	x, err = q.Dequeue()
+	if x != nil {
+		t.Errorf("Expected empty, got `%v`", string(x.Value))
+	}
+	if err != ErrEmpty {
+		t.Errorf("Expected no error, got %v", err)
+	}
+
+	timeout := time.After(3 * time.Second)
+	done := make(chan bool)
+	go func() {
+		x, err = q.DequeueBlock()
+		if x == nil {
+			t.Errorf("Expected get `%v`, got empty", string(x.Value))
+		}
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+		done <- true
+	}()
+
+	go func() {
+		time.Sleep(1 * time.Second)
+		_, err := q.Enqueue(testData)
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+	}()
+
+	select {
+	case <-timeout:
+		t.Fatal("Test didn't finish in time")
+	case <-done:
+	}
+}
+
+func TestBlockingWithClose(t *testing.T) {
+	file := fmt.Sprintf("test_db_%d", time.Now().UnixNano())
+	q, err := OpenQueue(file)
+	if err != nil {
+		t.Error(err)
+	}
+	defer q.Drop()
+
+	go func() {
+		time.Sleep(1 * time.Second)
+		err := q.Close()
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+	}()
+
+	timeout := time.After(3 * time.Second)
+	done := make(chan bool)
+	go func() {
+		// The queue is empty,
+		// so DequeueBlock should really block and wait,
+		// until the other goroutine calls Close,
+		// and the Close should wake-up this DequeueBlock block,
+		// and return an error because the queue is now closed.
+		_, err := q.DequeueBlock()
+		if err != ErrDBClosed {
+			t.Errorf("Expected to get %v, got %v", ErrDBClosed, err)
+		}
+		done <- true
+	}()
+
+	select {
+	case <-timeout:
+		t.Fatal("Test didn't finish in time")
+	case <-done:
+	}
+}
+
+func TestBlockingAggressive(t *testing.T) {
+	rand.Seed(0) // ensure we have reproducible sleeps
+
+	file := fmt.Sprintf("test_db_%d", time.Now().UnixNano())
+	q, err := OpenQueue(file)
+	if err != nil {
+		t.Error(err)
+	}
+	defer q.Drop()
+
+	numProducers := 50
+	numItemsPerProducer := 50
+	numConsumers := 25
+
+	done := make(chan bool)
+	var wg sync.WaitGroup
+	wg.Add(numProducers * numItemsPerProducer)
+
+	go func() {
+		wg.Wait()
+		q.Close()
+		done <- true
+	}()
+
+	// producers
+	for p := 0; p < numProducers; p++ {
+		go func(producer int) {
+			for i := 0; i < numItemsPerProducer; i++ {
+				s := rand.Intn(150)
+				time.Sleep(time.Duration(s) * time.Millisecond)
+				_, err := q.Enqueue([]byte(fmt.Sprintf("%d", i)))
+				if err != nil {
+					t.Errorf("Expected no err, got %v", err)
+				}
+				fmt.Println("Enqueued item", i, "by producer", producer, "after sleeping", s)
+			}
+		}(p)
+	}
+
+	// consumers
+	for c := 0; c < numConsumers; c++ {
+		go func(consumer int) {
+			for {
+				x, err := q.DequeueBlock()
+				if err == ErrDBClosed {
+					return
+				}
+				if err != nil {
+					t.Errorf("Expected no err, got %v", err)
+				}
+				fmt.Println("Dequeued item", string(x.Value), "by consumer", consumer)
+				wg.Done()
+			}
+		}(c)
+	}
+
+	timeout := time.After(10 * time.Second)
+	select {
+	case <-timeout:
+		t.Fatal("Test didn't finish in time")
+	case <-done:
+	}
+}
+
 func BenchmarkQueueEnqueue(b *testing.B) {
 	// Open test database
 	file := fmt.Sprintf("test_db_%d", time.Now().UnixNano())
@@ -627,5 +800,30 @@ func BenchmarkQueueDequeue(b *testing.B) {
 
 	for n := 0; n < b.N; n++ {
 		_, _ = q.Dequeue()
+	}
+}
+
+func BenchmarkQueueDequeueBlock(b *testing.B) {
+	// Open test database
+	file := fmt.Sprintf("test_db_%d", time.Now().UnixNano())
+	q, err := OpenQueue(file)
+	if err != nil {
+		b.Error(err)
+	}
+	defer q.Drop()
+
+	// Fill with dummy data
+	for n := 0; n < b.N; n++ {
+		if _, err = q.Enqueue([]byte("value")); err != nil {
+			b.Error(err)
+		}
+	}
+
+	// Start benchmark
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for n := 0; n < b.N; n++ {
+		_, _ = q.DequeueBlock()
 	}
 }
