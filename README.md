@@ -378,6 +378,25 @@ PASS
 ok      github.com/ldmtam/goque     18.135s
 ```
 
+Go 1.17:
+```
+Machine: Macbook pro M1 13.3 inch 2020
+goos: darwin
+goarch: arm64
+pkg: github.com/ldmtam/goque
+BenchmarkPrefixQueueEnqueue-8              47442             24741 ns/op            9117 B/op        220 allocs/op
+BenchmarkPrefixQueueDequeue-8              31928             42343 ns/op           16611 B/op        413 allocs/op
+BenchmarkPriorityQueueEnqueue-8           346064              2967 ns/op             391 B/op          6 allocs/op
+BenchmarkPriorityQueueDequeue-8           350427              5315 ns/op            1035 B/op         17 allocs/op
+BenchmarkQueueEnqueue-8                   452318              2762 ns/op             372 B/op          6 allocs/op
+BenchmarkQueueDequeue-8                   382750              5255 ns/op             971 B/op         17 allocs/op
+BenchmarkQueueDequeueBlock-8              366813              5255 ns/op            1004 B/op         17 allocs/op
+BenchmarkStackPush-8                      456992              2685 ns/op             376 B/op          6 allocs/op
+BenchmarkStackPop-8                       349752              4329 ns/op             904 B/op         15 allocs/op
+PASS
+ok      github.com/ldmtam/goque 34.225s
+```
+
 ## Thanks
 
 **syndtr** ([https://github.com/syndtr](https://github.com/syndtr)) - LevelDB port to Go  
