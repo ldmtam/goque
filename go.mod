@@ -1,4 +1,4 @@
-module github.com/ldmtam/goque
+module github.com/ldmtam/goque/v2
 
 go 1.17
 

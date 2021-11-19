@@ -1,4 +1,4 @@
-# Goque [![GoDoc](http://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/ldmtam/goque) [![License](http://img.shields.io/badge/license-mit-blue.svg)](https://raw.githubusercontent.com/beeker1121/goque/master/LICENSE) [![Go Report Card](https://goreportcard.com/badge/github.com/ldmtam/goque)](https://goreportcard.com/report/github.com/ldmtam/goque) [![Build Status](https://travis-ci.org/beeker1121/goque.svg?branch=master)](https://travis-ci.org/beeker1121/goque)
+# Goque [![GoDoc](http://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/ldmtam/goque/v2) [![License](http://img.shields.io/badge/license-mit-blue.svg)](https://raw.githubusercontent.com/beeker1121/goque/master/LICENSE) [![Go Report Card](https://goreportcard.com/badge/github.com/ldmtam/goque/v2)](https://goreportcard.com/report/github.com/ldmtam/goque/v2) [![Build Status](https://travis-ci.org/beeker1121/goque.svg?branch=master)](https://travis-ci.org/beeker1121/goque)
 
 Goque provides embedded, disk-based implementations of stack and queue data structures.
 
@@ -20,13 +20,13 @@ Instead of using an in-memory heap structure to store data, everything is stored
 Fetch the package from GitHub:
 
 ```sh
-go get github.com/ldmtam/goque
+go get github.com/ldmtam/goque/v2
 ```
 
 Import to your project:
 
 ```go
-import "github.com/ldmtam/goque"
+import "github.com/ldmtam/goque/v2"
 ```
 
 ## Usage
@@ -359,7 +359,7 @@ BenchmarkQueueEnqueue             200000              8049 ns/op             487
 BenchmarkQueueDequeue             200000             18970 ns/op            1089 B/op         17 allocs/op
 BenchmarkStackPush                200000              8145 ns/op             487 B/op          7 allocs/op
 BenchmarkStackPop                 200000             18947 ns/op            1097 B/op         17 allocs/op
-ok      github.com/ldmtam/goque     22.549s
+ok      github.com/ldmtam/goque/v2     22.549s
 ```
 
 Go 1.8:
@@ -375,7 +375,7 @@ BenchmarkQueueDequeue             200000             11537 ns/op            1125
 BenchmarkStackPush                300000              4631 ns/op             513 B/op          9 allocs/op
 BenchmarkStackPop                 200000              9629 ns/op            1116 B/op         19 allocs/op
 PASS
-ok      github.com/ldmtam/goque     18.135s
+ok      github.com/ldmtam/goque/v2     18.135s
 ```
 
 Go 1.17:
@@ -383,7 +383,7 @@ Go 1.17:
 Machine: Macbook pro M1 13.3 inch 2020
 goos: darwin
 goarch: arm64
-pkg: github.com/ldmtam/goque
+pkg: github.com/ldmtam/goque/v2
 BenchmarkPrefixQueueEnqueue-8              47442             24741 ns/op            9117 B/op        220 allocs/op
 BenchmarkPrefixQueueDequeue-8              31928             42343 ns/op           16611 B/op        413 allocs/op
 BenchmarkPriorityQueueEnqueue-8           346064              2967 ns/op             391 B/op          6 allocs/op
@@ -394,7 +394,7 @@ BenchmarkQueueDequeueBlock-8              366813              5255 ns/op        
 BenchmarkStackPush-8                      456992              2685 ns/op             376 B/op          6 allocs/op
 BenchmarkStackPop-8                       349752              4329 ns/op             904 B/op         15 allocs/op
 PASS
-ok      github.com/ldmtam/goque 34.225s
+ok      github.com/ldmtam/goque/v2 34.225s
 ```
 
 ## Thanks
